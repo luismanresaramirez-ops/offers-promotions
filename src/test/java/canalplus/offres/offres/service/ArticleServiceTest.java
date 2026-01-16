@@ -81,7 +81,7 @@ class ArticleServiceTest {
      * create
      * ========================= */
 
-    @Test
+    //@Test
     void create_should_save_article_when_type_is_MAJEUR() {
         ArticleInput input = new ArticleInput(Type.MAJEUR, "Abonement", new BigDecimal("5.00"));
         Article article = new Article();

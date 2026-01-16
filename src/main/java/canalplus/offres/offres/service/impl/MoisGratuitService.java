@@ -41,10 +41,17 @@ public class MoisGratuitService {
         return promotion.getAvantGratuits() != null && !promotion.getAvantGratuits().isEmpty();
     }
 
-    public int getFreeMonthCount(Promotion promotion) {
+    public Integer getFreeMonthDecalantCount(Promotion promotion) {
         return promotion.getAvantGratuits().stream()
+        		.filter(ag -> ag.getCodGratuit().getIndplus().equals(Boolean.TRUE))
                 .mapToInt(AvantGratuit::getNbrMois)
                 .sum();
     }
-	
+    
+    public Integer getFreeMonthCount(Promotion promotion) {
+        return promotion.getAvantGratuits().stream()
+        		.filter(ag -> ag.getCodGratuit().getIndflag().equals(Boolean.TRUE))
+                .mapToInt(AvantGratuit::getNbrMois)
+                .sum();
+    }
 }

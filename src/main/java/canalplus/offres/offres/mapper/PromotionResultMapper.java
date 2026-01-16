@@ -15,12 +15,14 @@ import canalplus.offres.offres.domain.model.Mineur;
 @Mapper(componentModel = "spring")
 public interface PromotionResultMapper {
 
+	@Mapping(target = "id", source = "article.id")
     @Mapping(target = "enPromotion", constant = "false")
     @Mapping(target = "prixInitial", source = "article.prix")
     @Mapping(target = "prixFinal", source = "article.prix")
     @Mapping(target = "promotionAppliquee", ignore = true)
     PromotionResult fromArticleSansPromotion(Article article);
 
+    @Mapping(target = "id", source = "article.id")
     @Mapping(target = "enPromotion", constant = "true")
     @Mapping(target = "prixInitial", source = "article.prix")
     @Mapping(target = "prixFinal", source = "prixFinal")

@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 public record PromotionResult(
+		Long id,
         boolean enPromotion,
         BigDecimal prixInitial,
         BigDecimal prixFinal,
