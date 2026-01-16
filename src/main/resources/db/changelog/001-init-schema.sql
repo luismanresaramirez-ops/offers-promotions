@@ -11,6 +11,20 @@ CREATE TABLE article (
     prix          NUMERIC(10,2) NOT NULL CHECK (prix >= 0)
 );
 
+
+CREATE TABLE mineur (
+    cmineur      BIGSERIAL PRIMARY KEY,
+    designation   VARCHAR(255) NOT NULL,
+    prix          NUMERIC(10,2) NOT NULL CHECK (prix >= 0)
+);
+
+CREATE TABLE article_mineur (
+    PRIMARY KEY (carticle, cmineur),
+    carticle    BIGINT NOT NULL REFERENCES article(carticle),
+    cmineur     BIGINT NOT NULL REFERENCES mineur(cmineur)
+);
+
+
 CREATE TABLE promotion (
     cpromo       BIGSERIAL PRIMARY KEY,
     libelle      VARCHAR(255) NOT NULL,

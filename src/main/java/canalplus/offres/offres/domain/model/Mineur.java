@@ -1,6 +1,5 @@
 package canalplus.offres.offres.domain.model;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,33 +10,30 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
-@Table(name = "ARTICLE")
+@Table(name = "MINEUR")
 @Getter 
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Article {
+public class Mineur {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "carticle")
+    @Column(name = "cmineur")
     private Long id;
-
+    
     @Column(nullable = false)
     private String designation;
-
+    
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal prix;
-
-    @OneToMany(mappedBy = "article", fetch = FetchType.LAZY)
-    private List<PromoArticle> promoArticles = new ArrayList<>();
     
     @OneToMany(
-            mappedBy = "article",
+            mappedBy = "mineur",
             fetch = FetchType.LAZY,
             cascade = CascadeType.ALL,
             orphanRemoval = true
         )
-    private Set<ArticleMineur> articleMineurs = new HashSet<>();
+    private Set<ArticleMineur> articleMajeurs = new HashSet<>();
 }

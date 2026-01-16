@@ -5,6 +5,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import canalplus.offres.offres.controller.dto.request.ArticleInput;
+import canalplus.offres.offres.controller.dto.request.LinkInput;
 import canalplus.offres.offres.controller.dto.response.ArticleResult;
 import canalplus.offres.offres.controller.dto.response.PromotionResult;
 import canalplus.offres.offres.service.impl.ArticleService;
@@ -14,9 +16,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/articles")
+@RequestMapping("/offers-promotions/articles")
 @RequiredArgsConstructor
-public class PromotionController {
+public class ArticleController {
 
     private final PromotionService promotionService;
     private final ArticleService articleService;
@@ -27,7 +29,7 @@ public class PromotionController {
      * Exemple :
      * GET /api/promotions/article/1?date=2026-01-15
      */
-    @GetMapping("/{articleId}")
+    @GetMapping("/{articleId}/promo")
     public ResponseEntity<PromotionResult> verifierPromotion(
             @PathVariable Long articleId,
             @RequestParam(required = false)
@@ -44,10 +46,30 @@ public class PromotionController {
     
     
     @GetMapping
-    public ResponseEntity<List<ArticleResult>> verifierPromotion() {
-        final var result = articleService.afficher();
+    public ResponseEntity<List<ArticleResult>> afficher(
+            @RequestParam(defaultValue = "MAJOR") String type
+    ) {
+        final var result = articleService.afficher(type);
+        return ResponseEntity.ok(result);
+    }
+
+    
+    @GetMapping("/{articleId}")
+    public ResponseEntity<ArticleResult> afficher(@PathVariable Long articleId,  @RequestParam(defaultValue = "MAJOR") String type) {
+        final var result = articleService.afficher(type).stream().filter(x -> x.id().equals(articleId)).findFirst().orElseThrow();
         return ResponseEntity.ok(result);
     }
     
+    @PostMapping
+    public ResponseEntity<Void> create(@RequestBody ArticleInput article) {
+        articleService.create(article);
+        return ResponseEntity.ok().build();
+    }
+    
+    @PostMapping("/bind")
+    public ResponseEntity<Void> associate(@RequestBody LinkInput article) {
+        articleService.createLink(article.majeur(), article.mineur());
+        return ResponseEntity.ok().build();
+    }
     
 }

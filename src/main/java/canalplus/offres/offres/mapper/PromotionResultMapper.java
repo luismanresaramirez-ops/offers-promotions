@@ -5,9 +5,12 @@ import java.math.BigDecimal;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import canalplus.offres.offres.controller.dto.response.MineurResult;
 import canalplus.offres.offres.controller.dto.response.MoisGratuit;
 import canalplus.offres.offres.controller.dto.response.PromotionResult;
 import canalplus.offres.offres.domain.model.Article;
+import canalplus.offres.offres.domain.model.ArticleMineur;
+import canalplus.offres.offres.domain.model.Mineur;
 
 @Mapper(componentModel = "spring")
 public interface PromotionResultMapper {
@@ -34,4 +37,6 @@ public interface PromotionResultMapper {
         return new MoisGratuit(Boolean.TRUE.equals(has), nb != null ? nb : 0);
     }
     
+
+
 }
