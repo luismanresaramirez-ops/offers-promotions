@@ -15,6 +15,7 @@ import canalplus.offres.offres.domain.repository.AboGratuitRepository;
 import canalplus.offres.offres.domain.repository.ArticleRepository;
 import canalplus.offres.offres.domain.repository.PromoArticleRepository;
 import canalplus.offres.offres.mapper.PromotionResultMapper;
+import canalplus.offres.offres.service.exception.ArticleNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -23,6 +24,8 @@ import lombok.RequiredArgsConstructor;
 public class MoisGratuitService {
 	
 	private final AboGratuitRepository aboGratuitRepository;
+	private final ArticleRepository articleRepository;
+	private final PromoArticleRepository promoArticleRepository;
 	
     public List<MoisGratuitHistorique> afficherMoisGratuits(Long numContrat, boolean actifs) {
     	List<AboGratuit> historique = aboGratuitRepository.findAbonnementsGratuitsActifs(numContrat, LocalDate.now(), actifs);
@@ -48,10 +51,74 @@ public class MoisGratuitService {
                 .sum();
     }
     
-    public Integer getFreeMonthCount(Promotion promotion) {
+    public Integer getFreeMonthSuspensionCount(Promotion promotion) {
         return promotion.getAvantGratuits().stream()
-        		.filter(ag -> ag.getCodGratuit().getIndflag().equals(Boolean.TRUE))
+        		.filter(ag -> ag.getCodGratuit().getIndsusp().equals(Boolean.TRUE))
                 .mapToInt(AvantGratuit::getNbrMois)
                 .sum();
     }
+    
+    public Integer getFreeMonthCount(Promotion promotion) {
+        return promotion.getAvantGratuits().stream()
+                .mapToInt(AvantGratuit::getNbrMois)
+                .sum();
+    }
+
+    public CodGratuit resolveCodGratuit(Long articleId, LocalDate effectiveDate) {
+
+        final var article = articleRepository.findById(articleId)
+                .orElseThrow(() -> new ArticleNotFoundException(articleId));
+
+        final var promosActives = promoArticleRepository.findByArticleId(article.getId()).stream()
+                .filter(pa -> PromotionService.isPromotionActive(pa.getPromotion(), effectiveDate))
+                .toList();
+
+        if (promosActives.isEmpty()) {
+            throw new IllegalStateException("Aucune promotion active pour l’article " + articleId);
+        }
+
+        final var meilleurePromo = PromotionService.meilleurePromo(promosActives, article.getPrix());
+
+        return meilleurePromo.getPromotion()
+                .getAvantGratuits().stream()
+                .findFirst()
+                .map(AvantGratuit::getCodGratuit)
+                .orElseThrow(() ->
+                        new IllegalStateException("Promotion active sans CodGratuit associé")
+                );
+    }
+
+
+    public LocalDate computeDateFin(
+            CodGratuit codGratuit,
+            LocalDate dateDebut,
+            LocalDate finAbonement
+    ) {
+
+        // indplus -> Prolonge la date de fin d'abonement
+        if (Boolean.TRUE.equals(codGratuit.getIndplus())) {
+            return finAbonement.plusMonths(codGratuit.getAvantGratuits().getFirst().getNbrMois());
+        }
+
+
+
+        // Cas par défaut 
+        return finAbonement;
+    }
+    
+    public LocalDate computeDateDeb(
+            CodGratuit codGratuit,
+            LocalDate dateDebut,
+            LocalDate finAbonement
+    ) {
+
+        // indplus -> Prolonge la date de debut d'abonement ( cas à la marge pas très utilise)
+        if (Boolean.TRUE.equals(codGratuit.getIndplus()) && Boolean.FALSE.equals(codGratuit.getIndfinabo())) {
+            return dateDebut.plusMonths(codGratuit.getAvantGratuits().getFirst().getNumMois());
+        }
+
+        // Cas par défaut 
+        return dateDebut;
+    }
+
 }

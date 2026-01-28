@@ -1,4 +1,4 @@
-package canalplus.offres.offres.service;
+package canalplus.offres.offres.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;

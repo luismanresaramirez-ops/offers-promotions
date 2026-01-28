@@ -5,12 +5,16 @@ import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import canalplus.offres.offres.controller.dto.request.DealInput;
 import canalplus.offres.offres.controller.dto.response.PromotionResult;
 import canalplus.offres.offres.service.impl.ArticleService;
 import canalplus.offres.offres.service.impl.PromotionService;
@@ -36,4 +40,13 @@ public class PromotionController {
 
         return ResponseEntity.ok(result);
     }
+    
+    @PostMapping("/subscribtion")
+    public ResponseEntity<PromotionResult> souscrireMoisGratuit(
+            @RequestBody @Validated DealInput deal
+    ) {
+        final var result = promotionService.subscriptionMoisGratuit(deal);
+        return ResponseEntity.ok(result);
+    }
+
 }

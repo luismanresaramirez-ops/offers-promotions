@@ -9,8 +9,10 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import canalplus.offres.offres.controller.dto.request.DealInput;
 import canalplus.offres.offres.controller.dto.response.MoisGratuitHistorique;
 import canalplus.offres.offres.controller.dto.response.PromotionResult;
+import canalplus.offres.offres.controller.dto.response.PromotionSummary;
 import canalplus.offres.offres.domain.model.AboGratuit;
 import canalplus.offres.offres.domain.model.Article;
 import canalplus.offres.offres.domain.model.AvantGratuit;
@@ -32,8 +34,10 @@ public class PromotionService {
 
     private final ArticleRepository articleRepository;
     private final PromoArticleRepository promoArticleRepository;
+    private final AboGratuitRepository abogratuitRepository;
     private final MoisGratuitService moisGratuitService;
     private final PromotionResultMapper promotionResultMapper;
+    
 
     /**
      * Verifier la promotion sur un article
@@ -60,7 +64,78 @@ public class PromotionService {
                 .flatMap(Optional::stream)
                 .toList();
     }
+    
+    /**
+     * subscrire un mois gratuit
+     * @param deal
+     * @return
+     */
+    @Transactional
+    public PromotionResult subscriptionMoisGratuit(DealInput deal) {
 
+        final var article = articleRepository.findById(deal.articleId())
+                .orElseThrow(() -> new ArticleNotFoundException(deal.articleId()));
+
+        // 1. Calcul de la promotion existante
+        final var promotionResult = calculerPromotion(
+                article,
+                deal.effectiveDate(),
+                null
+        ).orElseThrow(() ->
+                new IllegalStateException("Aucun mois actif pour cet article")
+        );
+
+        // 2. Vérification des mois gratuits
+        if (!promotionResult.moisGratuit().hasMoisGratuit()) {
+            throw new IllegalStateException("La promotion ne contient aucun mois gratuit");
+        }
+
+        // 3. Récupération du CodGratuit à appliquer
+        final var codGratuit = moisGratuitService.resolveCodGratuit(
+                article.getId(),
+                deal.effectiveDate()
+        );
+
+        // 4. Calcul des dates
+        final LocalDate dateDebut = moisGratuitService.computeDateDeb(
+        		codGratuit, deal.dateDebut(), 
+        		deal.finAbonement());
+        
+        final LocalDate dateFin = moisGratuitService.computeDateFin(
+                codGratuit,
+                deal.dateDebut(),
+                deal.finAbonement()
+        );
+    
+    
+        
+        // 5. Création de l’abonnement gratuit
+        final var aboGratuit = AboGratuit.builder()
+                .numContrat(deal.numContract())
+                .codGratuit(codGratuit)
+                .dateDebut(dateDebut)
+                .dateFin(dateFin)
+                .build();
+
+        abogratuitRepository.save(aboGratuit);
+
+        // 6. Enrichissement du summary de promotion
+        final var promotion = codGratuit.getAvantGratuits()
+                .stream()
+                .findFirst()
+                .orElseThrow()
+                .getPromotion();
+
+        final var promotionSummary = new PromotionSummary(
+                promotion.getId(),
+                promotion.getLibelle(),
+                dateDebut,
+                dateFin
+        );
+
+        // 7. Retour du résultat enrichi
+        return promotionResult.withPromotionAppliquee(promotionSummary);
+    }
 
     /**
      * Moteur de calcul de promotions
@@ -82,12 +157,8 @@ public class PromotionService {
         final var prixFinal = calculerPrixFinal(article.getPrix(), meilleurePromo);
         final var promotion = meilleurePromo.getPromotion();
         
-        Integer freeMonths = 0;
-        if(decalant) {
-        	freeMonths = moisGratuitService.getFreeMonthDecalantCount(promotion);
-        } else {
-        	freeMonths = moisGratuitService.getFreeMonthCount(promotion);
-        }
+        final var freeMonths = moisGratuitService.getFreeMonthCount(promotion);
+
         
         return Optional.of(
                 promotionResultMapper.fromArticleAvecPromotion(
@@ -103,24 +174,24 @@ public class PromotionService {
        RÈGLES MÉTIER
        ========================= */
 
-    private boolean isPromotionActive(Promotion promotion, LocalDate date) {
+    public static boolean isPromotionActive(Promotion promotion, LocalDate date) {
         return !date.isBefore(promotion.getDateDebut())
                 && !date.isAfter(promotion.getDateFin());
     }
 
-    private PromoArticle meilleurePromo(List<PromoArticle> promos, BigDecimal prix) {
+    public static PromoArticle meilleurePromo(List<PromoArticle> promos, BigDecimal prix) {
         return promos.stream()
                 .max(Comparator.comparing(pa -> calculerRemise(pa, prix)))
                 .orElseThrow();
     }
 
-    private BigDecimal calculerPrixFinal(BigDecimal prixInitial, PromoArticle promo) {
+    public static BigDecimal calculerPrixFinal(BigDecimal prixInitial, PromoArticle promo) {
         return prixInitial
                 .subtract(calculerRemise(promo, prixInitial))
                 .max(BigDecimal.ZERO);
     }
 
-    private BigDecimal calculerRemise(PromoArticle promo, BigDecimal prix) {
+    public static BigDecimal calculerRemise(PromoArticle promo, BigDecimal prix) {
 
         if (promo.getRemise() != null) {
             return promo.getRemise();
